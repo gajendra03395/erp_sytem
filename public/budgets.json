@@ -1,0 +1,14 @@
+[
+  {
+    "id": "1768747487251",
+    "department": "production",
+    "category": "materials",
+    "planned_amount": 50000,
+    "period": "monthly",
+    "year": 2024,
+    "actual_amount": 0,
+    "status": "active",
+    "created_at": "2026-01-18T14:44:47.251Z",
+    "updated_at": "2026-01-18T14:44:47.251Z"
+  }
+]

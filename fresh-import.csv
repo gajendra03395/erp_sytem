@@ -1,0 +1,3 @@
+Name,Email,Employee ID,Department,Role,Phone,Shift,Status
+New Employee 1,newemp1@company.com,EMP777,production,OPERATOR,+1234567777,Day,active
+New Employee 2,newemp2@company.com,EMP776,production,SUPERVISOR,+1234567776,Night,active

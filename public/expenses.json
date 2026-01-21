@@ -1,0 +1,13 @@
+[
+  {
+    "id": "1768747492985",
+    "description": "Office Supplies",
+    "amount": 1500,
+    "category": "administrative",
+    "department": "office",
+    "date": "2024-01-15T00:00:00.000Z",
+    "status": "pending",
+    "created_at": "2026-01-18T14:44:52.985Z",
+    "updated_at": "2026-01-18T14:44:52.985Z"
+  }
+]

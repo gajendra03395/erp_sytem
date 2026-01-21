@@ -1,0 +1,79 @@
+{
+  "name": "dongkwang-precision-erp",
+  "short_name": "Dongkwang ERP",
+  "description": "Complete Manufacturing ERP System for Dongkwang Precision India Pvt Ltd",
+  "start_url": "https://dongkwang-precision-india.vercel.app",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://dongkwang-precision-india.vercel.app/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "https://dongkwang-precision-india.vercel.app/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "https://dongkwang-precision-india.vercel.app/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "https://dongkwang-precision-india.vercel.app/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "https://dongkwang-precision-india.vercel.app/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "https://dongkwang-precision-india.vercel.app/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://dongkwang-precision-india.vercel.app/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "https://dongkwang-precision-india.vercel.app/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "splash_pages": null,
+  "scope": "https://dongkwang-precision-india.vercel.app",
+  "lang": "en",
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View dashboard",
+      "url": "https://dongkwang-precision-india.vercel.app/dashboard",
+      "icons": [{ "src": "https://dongkwang-precision-india.vercel.app/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Chat",
+      "short_name": "Chat",
+      "description": "Open chat",
+      "url": "https://dongkwang-precision-india.vercel.app/chat",
+      "icons": [{ "src": "https://dongkwang-precision-india.vercel.app/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Inventory",
+      "short_name": "Inventory",
+      "description": "Manage inventory",
+      "url": "https://dongkwang-precision-india.vercel.app/inventory",
+      "icons": [{ "src": "https://dongkwang-precision-india.vercel.app/icons/icon-96x96.png", "sizes": "96x96" }]
+    }
+  ]
+}

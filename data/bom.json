@@ -1,0 +1,37 @@
+[
+  {
+    "id": "bom_1768737632877_ctkjxo3d3",
+    "bom_code": "ergjvn",
+    "product_name": "dfvm",
+    "product_sku": "cvnm",
+    "components": [],
+    "currency": "INR",
+    "total_cost": 0,
+    "version": "1.0",
+    "active": true,
+    "created_at": "2026-01-18T12:00:32.877Z",
+    "updated_at": "2026-01-18T12:00:32.877Z"
+  },
+  {
+    "id": "bom_1768737647067_mucx1b09a",
+    "bom_code": "fhjn",
+    "product_name": "cnj ",
+    "product_sku": "jfvn",
+    "components": [
+      {
+        "material_id": "3456",
+        "material_name": "ety",
+        "quantity": 1,
+        "unit": "pcs",
+        "unit_cost": 0,
+        "total_cost": 0
+      }
+    ],
+    "currency": "USD",
+    "total_cost": 0,
+    "version": "1.0",
+    "active": true,
+    "created_at": "2026-01-18T12:00:47.067Z",
+    "updated_at": "2026-01-18T12:00:47.067Z"
+  }
+]

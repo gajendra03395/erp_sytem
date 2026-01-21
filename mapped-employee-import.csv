@@ -1,0 +1,6 @@
+Name,Email,Department,Status,Phone,Shift,Employee ID,Role
+EMP1001 User,empcomapny1001@company.com,Production,active,,Day,EMP1001,OPERATOR
+EMP1002 User,emp1002@company.com,Production,active,,Day,EMP1002,OPERATOR
+EMP1003 User,emp1003@company.com,Production,active,,Day,EMP1003,OPERATOR
+EMP1004 User,emp1004@company.com,Production,active,,Day,EMP1004,OPERATOR
+EMP1005 User,emp1005@company.com,Production,active,,Day,EMP1005,OPERATOR

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Import Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+        .result { margin: 20px 0; padding: 10px; background: #f0f0f0; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>Employee Import Test</h1>
+    
+    <button onclick="testDirectAPI()">Test Direct API</button>
+    <button onclick="testWithAuth()">Test With Auth</button>
+    <button onclick="testFileUpload()">Test File Upload</button>
+    
+    <div id="result" class="result"></div>
+
+    <script>
+        async function testDirectAPI() {
+            try {
+                const response = await fetch('http://localhost:3000/api/employees');
+                const data = await response.json();
+                document.getElementById('result').innerHTML = 
+                    `<div class="success">Direct API Success: ${data.data?.length || 0} employees found</div>`;
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    `<div class="error">Direct API Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testWithAuth() {
+            try {
+                // First login
+                const loginResponse = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'admin@erp.com', password: 'admin123' })
+                });
+                const loginData = await loginResponse.json();
+                
+                if (loginData.success) {
+                    // Then get employees with auth
+                    const empResponse = await fetch('http://localhost:3000/api/employees', {
+                        headers: { 'Authorization': `Bearer ${loginData.token}` }
+                    });
+                    const empData = await empResponse.json();
+                    document.getElementById('result').innerHTML = 
+                        `<div class="success">Auth API Success: ${empData.data?.length || 0} employees found</div>`;
+                } else {
+                    throw new Error('Login failed');
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    `<div class="error">Auth API Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testFileUpload() {
+            try {
+                // Login first
+                const loginResponse = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'admin@erp.com', password: 'admin123' })
+                });
+                const loginData = await loginResponse.json();
+                
+                if (!loginData.success) {
+                    throw new Error('Login failed');
+                }
+
+                // Create test CSV
+                const csvContent = 'Name,Email,Employee ID,Department,Role,Phone,Shift,Status\nTest User,test@company.com,EMP123,production,OPERATOR,+1234567890,Day,active';
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                
+                // Upload file
+                const formData = new FormData();
+                formData.append('type', 'employees');
+                formData.append('file', blob, 'test.csv');
+                
+                const importResponse = await fetch('http://localhost:3000/api/import', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${loginData.token}` },
+                    body: formData
+                });
+                
+                const importData = await importResponse.json();
+                document.getElementById('result').innerHTML = 
+                    `<div class="success">Import Success: ${importData.success ? 'YES' : 'NO'}, Results: ${importData.results?.length || 0}</div>`;
+                
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    `<div class="error">Import Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

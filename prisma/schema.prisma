@@ -1,0 +1,633 @@
+// Enhanced Prisma Schema for Manufacturing ERP with PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER MODEL (Authentication)
+// ============================================
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String       @map("password_hash")
+  role         EmployeeRole
+  employeeId   String?      @unique @map("employee_id")
+  employee     Employee?    @relation(fields: [employeeId], references: [id])
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  // Relations for enhanced features
+  createdBankAccounts    BankAccount[]
+  createdTaxConfigs      TaxConfiguration[]
+  createdTaxReports      TaxReport[]
+  createdReconciliations BankReconciliation[]
+  createdStockMovements  StockMovement[]
+  createdBarcodes        Barcode[]
+  
+  // Chat/Forum relations
+  chatThreads ChatThread[] @relation("ChatThreads")
+  sentMessages Message[] @relation("UserMessages")
+  uploadedAttachments ChatAttachment[] @relation("UserAttachments")
+
+  @@map("users")
+}
+
+enum EmployeeRole {
+  SUPERUSER
+  ADMIN
+  MANAGER
+  SUPERVISOR
+  OPERATOR
+  EMPLOYEE
+}
+
+// ============================================
+// EMPLOYEE MODEL
+// ============================================
+model Employee {
+  id         String             @id @default(cuid())
+  employeeId String             @unique @map("employee_id")
+  name       String
+  email      String             @unique
+  phone      String?
+  department EmployeeDepartment
+  status     EmployeeStatus     @default(active)
+  shift      String?
+  createdAt  DateTime           @default(now()) @map("created_at")
+  updatedAt  DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  user      User?
+  qcRecords QualityControl[]
+
+  @@index([employeeId])
+  @@index([department])
+  @@index([status])
+  @@map("employees")
+}
+
+enum EmployeeDepartment {
+  production
+  qc
+  maintenance
+  admin
+  financial
+  inventory
+  sales
+  hr
+}
+
+enum EmployeeStatus {
+  active
+  inactive
+  on_leave
+}
+
+// ============================================
+// FINANCIAL MANAGEMENT
+// ============================================
+
+model Account {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  type        String
+  description String?
+  balance     Float    @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  journalEntriesAsDebit  JournalEntry[] @relation("DebitAccount")
+  journalEntriesAsCredit JournalEntry[] @relation("CreditAccount")
+
+  @@map("accounts")
+}
+
+model JournalEntry {
+  id           String   @id @default(cuid())
+  date         DateTime
+  description  String
+  debitAmount  Float
+  creditAmount Float
+  reference    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  debitAccountId  String
+  debitAccount    Account @relation("DebitAccount", fields: [debitAccountId], references: [id])
+  creditAccountId String
+  creditAccount   Account @relation("CreditAccount", fields: [creditAccountId], references: [id])
+
+  @@map("journal_entries")
+}
+
+model Invoice {
+  id            String    @id @default(cuid())
+  invoiceNumber String    @unique
+  customerId    String
+  vendorId      String?
+  amount        Float
+  taxAmount     Float     @default(0)
+  totalAmount   Float
+  status        String    @default("pending")
+  dueDate       DateTime
+  issueDate     DateTime
+  paidDate      DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("invoices")
+}
+
+model Vendor {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String?
+  address      String?
+  taxNumber    String?
+  paymentTerms String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("vendors")
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  phone       String?
+  address     String?
+  taxNumber   String?
+  creditLimit Float    @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("customers")
+}
+
+model Budget {
+  id          String   @id @default(cuid())
+  name        String
+  department  String
+  amount      Float
+  spent       Float    @default(0)
+  year        Int
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("budgets")
+}
+
+model Expense {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  amount      Float
+  date        DateTime
+  category    String
+  status      String    @default("pending")
+  approvedBy  String?
+  approvedAt  DateTime?
+  receiptUrl  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("expenses")
+}
+
+// ============================================
+// TAX MANAGEMENT
+// ============================================
+
+model TaxConfiguration {
+  id            String    @id @default(cuid())
+  name          String
+  taxType       String
+  rate          Float
+  description   String
+  isCompound    Boolean   @default(false)
+  parentTaxId   String?
+  applicableOn  String
+  jurisdiction  String
+  effectiveDate DateTime
+  expiryDate    DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User?     @relation(fields: [userId], references: [id])
+  userId        String?
+
+  @@map("tax_configurations")
+}
+
+model TaxReport {
+  id               String    @id @default(cuid())
+  reportType       String
+  periodStart      DateTime
+  periodEnd        DateTime
+  totalSales       Float
+  totalPurchases   Float
+  taxableAmount    Float
+  taxAmount        Float
+  inputTaxCredit   Float
+  netTaxPayable    Float
+  status           String    @default("draft")
+  filedDate        DateTime?
+  paidDate         DateTime?
+  filingReference  String?
+  paymentReference String?
+  createdBy        String
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User?     @relation(fields: [userId], references: [id])
+  userId           String?
+
+  @@map("tax_reports")
+}
+
+// ============================================
+// BANK RECONCILIATION
+// ============================================
+
+model BankAccount {
+  id                 String    @id @default(cuid())
+  accountName        String
+  accountNumber      String
+  bankName           String
+  branchName         String
+  accountType        String
+  currency           String
+  openingBalance     Float
+  currentBalance     Float
+  isActive           Boolean   @default(true)
+  lastReconciledDate DateTime?
+  createdBy          String
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  user               User?     @relation(fields: [userId], references: [id])
+  userId             String?
+
+  @@map("bank_accounts")
+}
+
+model BankReconciliation {
+  id                 String    @id @default(cuid())
+  bankAccountId      String
+  reconciliationDate DateTime
+  statementBalance   Float
+  bookBalance        Float
+  difference         Float
+  status             String    @default("pending")
+  reconciledItems    Json?
+  unreconciledItems  Json?
+  notes              String?
+  reconciledBy       String
+  createdAt          DateTime  @default(now())
+  completedAt        DateTime?
+  user               User?     @relation(fields: [userId], references: [id])
+  userId             String?
+
+  @@map("bank_reconciliations")
+}
+
+// ============================================
+// ENHANCED INVENTORY MANAGEMENT
+// ============================================
+
+model InventoryItem {
+  id            String   @id @default(cuid())
+  itemName      String   @map("item_name")
+  stockLevel    Int      @default(0) @map("stock_level")
+  reorderPoint  Int      @map("reorder_point")
+  unit          String
+  location      String
+  category      String
+  warehouseId   String?  @map("warehouse_id")
+  barcode       String?
+  qrCode        String?  @map("qr_code")
+  costMethod    String   @default("WEIGHTED_AVERAGE") @map("cost_method")
+  unitCost      Float    @default(0) @map("unit_cost")
+  minStockLevel Int      @default(0) @map("min_stock_level")
+  maxStockLevel Int?     @map("max_stock_level")
+  leadTimeDays  Int      @default(0) @map("lead_time_days")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("inventory_items")
+}
+
+model StockAlert {
+  id              String    @id @default(cuid())
+  inventoryItemId String    @map("inventory_item_id")
+  itemName        String
+  currentStock    Int       @map("current_stock")
+  alertType       String
+  thresholdValue  Int       @map("threshold_value")
+  message         String
+  severity        String
+  isResolved      Boolean   @default(false) @map("is_resolved")
+  resolvedAt      DateTime? @map("resolved_at")
+  resolvedBy      String?   @map("resolved_by")
+  warehouseId     String?   @map("warehouse_id")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("stock_alerts")
+}
+
+model StockMovement {
+  id              String   @id @default(cuid())
+  inventoryItemId String   @map("inventory_item_id")
+  itemName        String
+  movementType    String   @map("movement_type")
+  quantity        Int
+  unitCost        Float    @map("unit_cost")
+  totalCost       Float    @map("total_cost")
+  referenceType   String   @map("reference_type")
+  referenceId     String?  @map("reference_id")
+  fromWarehouseId String?  @map("from_warehouse_id")
+  toWarehouseId   String?  @map("to_warehouse_id")
+  notes           String?
+  createdBy       String   @map("created_by")
+  warehouseId     String   @map("warehouse_id")
+  createdAt       DateTime @default(now())
+  user            User?    @relation(fields: [userId], references: [id])
+  userId          String?
+
+  @@map("stock_movements")
+}
+
+model Warehouse {
+  id                 String   @id @default(cuid())
+  name               String
+  code               String   @unique
+  address            String
+  city               String
+  state              String
+  country            String
+  postalCode         String   @map("postal_code")
+  managerName        String   @map("manager_name")
+  managerEmail       String   @map("manager_email")
+  managerPhone       String   @map("manager_phone")
+  capacity           Int      @default(0)
+  currentUtilization Int      @default(0) @map("current_utilization")
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("warehouses")
+}
+
+model Barcode {
+  id              String   @id @default(cuid())
+  inventoryItemId String   @map("inventory_item_id")
+  barcodeType     String   @map("barcode_type")
+  barcodeValue    String   @map("barcode_value")
+  qrCode          String?  @map("qr_code")
+  isActive        Boolean  @default(true)
+  createdBy       String   @map("created_by")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User?    @relation(fields: [userId], references: [id])
+  userId          String?
+
+  @@map("barcodes")
+}
+
+// ============================================
+// ORIGINAL MODELS (Enhanced)
+// ============================================
+
+model Machine {
+  id              String        @id @default(cuid())
+  machineName     String        @map("machine_name")
+  machineType     String        @map("machine_type")
+  status          MachineStatus @default(idle)
+  lastServiceDate DateTime      @map("last_service_date")
+  nextServiceDate DateTime?     @map("next_service_date")
+  location        String?
+  notes           String?
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  maintenanceLogs MaintenanceLog[]
+
+  @@index([status])
+  @@index([lastServiceDate])
+  @@map("machines")
+}
+
+enum MachineStatus {
+  running
+  under_maintenance
+  idle
+}
+
+model MaintenanceLog {
+  id             String   @id @default(cuid())
+  machineId      String   @map("machine_id")
+  machine        Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  machineName    String   @map("machine_name")
+  serviceDate    DateTime @map("service_date")
+  serviceType    String   @map("service_type")
+  technicianName String?  @map("technician_name")
+  notes          String?
+  cost           Float?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([machineId])
+  @@index([serviceDate])
+  @@map("maintenance_logs")
+}
+
+model QualityControl {
+  id             String   @id @default(cuid())
+  batchNo        String   @map("batch_no")
+  result         QCResult
+  inspectorName  String   @map("inspector_name")
+  inspectorId    String   @map("inspector_id")
+  inspector      Employee @relation(fields: [inspectorId], references: [id])
+  inspectionDate DateTime @map("inspection_date")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([batchNo])
+  @@index([result])
+  @@index([inspectionDate])
+  @@index([inspectorId])
+  @@map("quality_control")
+}
+
+enum QCResult {
+  pass
+  fail
+}
+
+// ============================================
+// PRODUCTION MODELS
+// ============================================
+
+model WorkOrder {
+  id           String       @id @default(cuid())
+  orderNo      String       @unique @map("order_no")
+  productName  String       @map("product_name")
+  productSku  String       @map("product_sku")
+  quantity     Int
+  unit         String       @default("units")
+  priority     Priority     @default(MEDIUM)
+  status       Status       @default(PENDING)
+  startDate    DateTime     @map("start_date")
+  dueDate      DateTime     @map("due_date")
+  completionDate DateTime?    @map("completion_date")
+  assignedTo   String?      @map("assigned_to")
+  bomId        String?      @map("bom_id")
+  notes        String?
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  bom          BOMItem?     @relation(fields: [bomId], references: [id])
+
+  @@index([orderNo])
+  @@index([status])
+  @@index([startDate])
+  @@map("work_orders")
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum Status {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model BOMItem {
+  id           String       @id @default(cuid())
+  bomCode      String       @unique @map("bom_code")
+  productName  String       @map("product_name")
+  productSku  String       @map("product_sku")
+  version      String       @default("1.0")
+  components   BOMComponent[]
+  totalCost    Float        @default(0)
+  currency     String       @default("USD")
+  active       Boolean      @default(true)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  workOrders   WorkOrder[]
+
+  @@index([bomCode])
+  @@index([active])
+  @@map("bom_items")
+}
+
+model BOMComponent {
+  materialId   String   @map("material_id")
+  materialName String   @map("material_name")
+  quantity     Int
+  unit         String
+  unitCost     Float    @map("unit_cost")
+  totalCost    Float    @map("total_cost")
+  bomId        String   @map("bom_id")
+  bom          BOMItem @relation(fields: [bomId], references: [id], onDelete: Cascade)
+
+  @@id([bomId, materialId])
+  @@map("bom_components")
+}
+
+// ============================================
+// CHAT/FORUM MODELS
+// ============================================
+model ChatThread {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  category    String   @default("general") // general, production, hr, it, maintenance, etc.
+  isPinned    Boolean  @default(false) @map("is_pinned")
+  isLocked    Boolean  @default(false) @map("is_locked")
+  createdBy   String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  creator     User     @relation("ChatThreads", fields: [createdBy], references: [id])
+  messages    Message[]
+  attachments ChatAttachment[]
+
+  @@index([category])
+  @@index([isPinned])
+  @@index([createdAt])
+  @@map("chat_threads")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  threadId  String   @map("thread_id")
+  senderId  String   @map("sender_id")
+  parentId  String?  @map("parent_id") // For threaded replies
+  isEdited  Boolean  @default(false) @map("is_edited")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender    User       @relation("UserMessages", fields: [senderId], references: [id])
+  parent    Message?   @relation("MessageReplies", fields: [parentId], references: [id])
+  replies   Message[]  @relation("MessageReplies")
+  attachments ChatAttachment[]
+
+  @@index([threadId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+model ChatAttachment {
+  id         String      @id @default(cuid())
+  filename   String
+  originalName String    @map("original_name")
+  mimeType   String      @map("mime_type")
+  fileSize   Int         @map("file_size")
+  filePath   String      @map("file_path")
+  threadId   String?     @map("thread_id") // Can be attached to thread or message
+  messageId  String?     @map("message_id")
+  uploadedBy String      @map("uploaded_by")
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  thread     ChatThread? @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  message    Message?    @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  uploader   User        @relation("UserAttachments", fields: [uploadedBy], references: [id])
+
+  @@index([threadId])
+  @@index([messageId])
+  @@index([uploadedBy])
+  @@map("chat_attachments")
+}

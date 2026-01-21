@@ -1,0 +1,6 @@
+Name,Email,Employee ID,Department,Role,Phone,Shift,Status
+Alice Johnson,alice.johnson@company.com,EMP006,production,OPERATOR,+1234567895,Day,active
+Bob Smith,bob.smith@company.com,EMP007,production,SUPERVISOR,+1234567896,Night,active
+Charlie Brown,charlie.brown@company.com,EMP008,qc,OPERATOR,+1234567897,Day,active
+Diana Wilson,diana.wilson@company.com,EMP009,maintenance,OPERATOR,+1234567898,Day,active
+Eva Davis,eva.davis@company.com,EMP010,production,ADMIN,+1234567899,Night,active

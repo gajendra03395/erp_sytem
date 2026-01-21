@@ -1,0 +1,6 @@
+Name,Email,Department,Status,Phone,Shift,Employee ID,Role
+John Smith,john.smith@company.com,Production,active,+1234567890,Day,EMP1001,OPERATOR
+Jane Doe,jane.doe@company.com,Production,active,+1234567891,Day,EMP1002,OPERATOR
+Mike Wilson,mike.wilson@company.com,Production,active,+1234567892,Day,EMP1003,SUPERVISOR
+Sarah Davis,sarah.davis@company.com,QC,active,+1234567893,Day,EMP1004,OPERATOR
+Tom Brown,tom.brown@company.com,Production,active,+1234567894,Night,EMP1005,OPERATOR

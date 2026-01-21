@@ -1,0 +1,5 @@
+Name,Email,Department,Status,Phone,Shift,Employee ID,Role
+John Smith,john.smith@company.com,Production,active,+1234567890,Day,EMP1001,OPERATOR
+Jane Doe,jane.doe@company.com,Production,active,+1234567891,Day,EMP1002,OPERATOR
+John Smith Updated,john.smith@company.com,Production,active,+9999999999,Day,EMP1001,SUPERVISOR
+New Employee,new.employee@company.com,Production,active,+1234567893,Day,EMP1003,OPERATOR

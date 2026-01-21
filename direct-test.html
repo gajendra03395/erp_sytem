@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Import Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { padding: 15px 30px; margin: 10px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .employees { margin: 20px 0; }
+        .employee { background: #e9ecef; padding: 10px; margin: 5px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Direct Import Test</h1>
+    <p>This bypasses all UI and tests the import functionality directly</p>
+    
+    <button onclick="loginAndImport()">Login & Import Test Employee</button>
+    <button onclick="checkEmployees()">Check Current Employees</button>
+    <button onclick="clearAndTest()">Clear Browser Storage & Test</button>
+    
+    <div id="result" class="result">
+        <div class="info">Click buttons above to test</div>
+    </div>
+    
+    <div id="employees" class="employees"></div>
+
+    <script>
+        async function loginAndImport() {
+            try {
+                // Step 1: Login
+                const loginResponse = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'admin@erp.com', password: 'admin123' })
+                });
+                
+                const loginData = await loginResponse.json();
+                if (!loginData.success) {
+                    throw new Error('Login failed');
+                }
+                
+                // Step 2: Import
+                const csvContent = 'Name,Email,Employee ID,Department,Role,Phone,Shift,Status\nDirect Import Test,directimport@company.com,EMP5555,production,OPERATOR,+1234565555,Day,active';
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                
+                const formData = new FormData();
+                formData.append('type', 'employees');
+                formData.append('file', blob, 'test.csv');
+                
+                const importResponse = await fetch('http://localhost:3000/api/import', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${loginData.token}` },
+                    body: formData
+                });
+                
+                const importData = await importResponse.json();
+                
+                document.getElementById('result').innerHTML = 
+                    `<div class="success">✅ SUCCESS: Login + Import completed!<br>Imported: ${importData.results?.length || 0} employees<br>Message: ${importData.message}</div>`;
+                
+                // Step 3: Check final count
+                setTimeout(checkEmployees, 2000);
+                
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    `<div class="error">❌ ERROR: ${error.message}</div>`;
+            }
+        }
+
+        async function checkEmployees() {
+            try {
+                const token = localStorage.getItem('auth_token');
+                if (!token) {
+                    document.getElementById('result').innerHTML = 
+                        '<div class="error">❌ No auth token found. Please login first.</div>';
+                    return;
+                }
+                
+                const response = await fetch('http://localhost:3000/api/employees', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    let employeeList = '<h3>Current Employees:</h3>';
+                    data.data.forEach(emp => {
+                        employeeList += `<div class="employee">👤 ${emp.name} (${emp.email}) - ${emp.employeeId}</div>`;
+                    });
+                    document.getElementById('employees').innerHTML = employeeList;
+                    document.getElementById('result').innerHTML = 
+                        `<div class="success">✅ SUCCESS: Found ${data.data.length} employees</div>`;
+                } else {
+                    throw new Error(data.error || 'Failed to fetch employees');
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    `<div class="error">❌ ERROR: ${error.message}</div>`;
+            }
+        }
+
+        function clearAndTest() {
+            localStorage.clear();
+            document.getElementById('result').innerHTML = 
+                '<div class="info">🧹 Browser storage cleared. Now try "Login & Import Test" again.</div>';
+            document.getElementById('employees').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

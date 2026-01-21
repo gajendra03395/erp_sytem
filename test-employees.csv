@@ -1,0 +1,4 @@
+Name,Email,Employee ID,Department,Role,Phone,Shift,Status
+Test Employee 1,test1@company.com,EMP006,production,OPERATOR,+1234567895,Day,active
+Test Employee 2,test2@company.com,EMP007,production,SUPERVISOR,+1234567896,Night,active
+Test Employee 3,test3@company.com,EMP008,qc,OPERATOR,+1234567897,Day,active

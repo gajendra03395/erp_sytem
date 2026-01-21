@@ -1,0 +1,12 @@
+[
+  {
+    "id": "1768747481522",
+    "name": "Test Vendor",
+    "email": "vendor@example.com",
+    "phone": "9876543210",
+    "category": "raw_material",
+    "status": "active",
+    "created_at": "2026-01-18T14:44:41.522Z",
+    "updated_at": "2026-01-18T14:44:41.522Z"
+  }
+]

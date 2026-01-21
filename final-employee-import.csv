@@ -1,0 +1,6 @@
+Name,Email,Department,Status,Phone,Shift,Employee ID,Role
+Test User1,test1001@company.com,Production,active,+1234567890,Day,EMP1001,OPERATOR
+Test User2,test1002@company.com,Production,active,+1234567891,Day,EMP1002,OPERATOR
+Test User3,test1003@company.com,Production,active,+1234567892,Day,EMP1003,OPERATOR
+Test User4,test1004@company.com,QC,active,+1234567893,Day,EMP1004,OPERATOR
+Test User5,test1005@company.com,Production,active,+1234567894,Night,EMP1005,OPERATOR
