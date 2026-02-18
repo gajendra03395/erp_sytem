@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { updateWorkOrder, deleteWorkOrder, readWorkOrders } from '@/lib/utils/production-storage'
+import { prisma } from '@/lib/db/prisma-client'
 import { hasPermission } from '@/lib/auth/permissions'
 import { getAuthUser } from '@/lib/auth/server-auth'
 
@@ -14,8 +14,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const workOrders = await readWorkOrders()
-    const workOrder = workOrders.find(wo => wo.id === params.id)
+    const workOrder = await prisma.workOrder.findUnique({
+      where: { id: params.id }
+    })
     
     if (!workOrder) {
       return NextResponse.json({ error: 'Work order not found' }, { status: 404 })
@@ -40,7 +41,21 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     const body = await request.json()
-    const workOrder = await updateWorkOrder(params.id, body)
+    const workOrder = await prisma.workOrder.update({
+      where: { id: params.id },
+      data: {
+        ...(body.order_no && { orderNo: body.order_no }),
+        ...(body.product_name && { productName: body.product_name }),
+        ...(body.product_sku && { productSku: body.product_sku }),
+        ...(body.quantity && { quantity: body.quantity }),
+        ...(body.priority && { priority: body.priority }),
+        ...(body.status && { status: body.status }),
+        ...(body.start_date && { startDate: new Date(body.start_date).toISOString() }),
+        ...(body.due_date && { dueDate: new Date(body.due_date).toISOString() }),
+        ...(body.notes !== undefined && { notes: body.notes }),
+        ...(body.assigned_to && { assignedTo: body.assigned_to }),
+      }
+    })
     
     if (!workOrder) {
       return NextResponse.json({ error: 'Work order not found' }, { status: 404 })
@@ -64,9 +79,11 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const success = await deleteWorkOrder(params.id)
+    const workOrder = await prisma.workOrder.delete({
+      where: { id: params.id }
+    })
     
-    if (!success) {
+    if (!workOrder) {
       return NextResponse.json({ error: 'Work order not found' }, { status: 404 })
     }
 

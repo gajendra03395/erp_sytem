@@ -3,13 +3,13 @@
     "id": "1768746966389",
     "item_name": "Steel Rod",
     "category": "raw_material",
-    "stock_level": 1350,
+    "stock_level": 1400,
     "unit": "Kg",
     "reorder_point": 300,
     "supplier": "Tata Steel",
     "last_stock_date": "2026-01-15T00:00:00.000Z",
     "created_at": "2026-01-18T14:36:06.389Z",
-    "updated_at": "2026-01-19T05:31:14.436Z"
+    "updated_at": "2026-02-18T11:28:16.600Z"
   },
   {
     "id": "1768746966404",
@@ -27,13 +27,13 @@
     "id": "1768746966407",
     "item_name": "Gear Box",
     "category": "finished_good",
-    "stock_level": 86,
+    "stock_level": 485.95,
     "unit": "Nos",
     "reorder_point": 20,
     "supplier": "ABC Industries",
     "last_stock_date": "2026-01-12T00:00:00.000Z",
     "created_at": "2026-01-18T14:36:06.407Z",
-    "updated_at": "2026-01-18T14:52:41.001Z"
+    "updated_at": "2026-02-18T11:28:34.470Z"
   },
   {
     "id": "1768746966408",

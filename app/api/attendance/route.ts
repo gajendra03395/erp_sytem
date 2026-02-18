@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { addStoredAttendance, getStoredAttendance } from '@/lib/utils/attendance-storage'
+import { prisma } from '@/lib/db/prisma-client'
 import { getAuthUser } from '@/lib/auth/server-auth'
 import type { AttendanceStatus } from '@/types/attendance'
 
@@ -12,10 +12,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const records = getStoredAttendance()
+    // Get all attendance records with employee info
+    const records = await prisma.$queryRaw`
+      SELECT 
+        a.id,
+        a.employee_id,
+        a.date,
+        a.status,
+        e.name as employee_name,
+        e.email as employee_email
+      FROM attendance a
+      LEFT JOIN employees e ON a.employee_id = e.employee_id
+      ORDER BY a.date DESC
+    `
+
     const filteredRecords = canManageAttendance(user.role)
-      ? records
-      : records.filter((record) => record.employee_id === user.employee_id)
+      ? records as any[]
+      : (records as any[]).filter((record: any) => record.employee_id === user.employee_id)
 
     return NextResponse.json({ success: true, data: filteredRecords })
   } catch (error) {
@@ -46,11 +59,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing attendance fields' }, { status: 400 })
     }
 
-    const newRecord = addStoredAttendance({
-      employee_id,
-      date: new Date(date),
-      status,
+    // Check if employee exists
+    const employee = await prisma.employee.findUnique({
+      where: { employeeId: employee_id }
     })
+
+    if (!employee) {
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 })
+    }
+
+    // Create attendance record
+    const newRecord = await prisma.$queryRaw`
+      INSERT INTO attendance (id, employee_id, date, status)
+      VALUES (gen_random_uuid(), ${employee_id}, ${date}::date, ${status})
+      RETURNING id, employee_id, date, status
+    `
 
     return NextResponse.json({ success: true, data: newRecord }, { status: 201 })
   } catch (error) {

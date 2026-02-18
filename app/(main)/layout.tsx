@@ -23,7 +23,6 @@ export default function MainLayout({
     { name: 'Analytics', path: '/analytics', icon: '📊' },
     { name: 'Inventory', path: '/inventory', icon: '📦' },
     { name: 'Production', path: '/production', icon: '⚙️' },
-    { name: 'Financial', path: '/financial-management', icon: '💰' },
     { name: 'Chat', path: '/chat', icon: '💬' },
     { name: 'Employees', path: '/employees', icon: '👥' },
     { name: 'Reports', path: '/reports', icon: '📋' },

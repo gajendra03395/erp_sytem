@@ -1,72 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-// Mock employees data for development
-const mockEmployees = [
-  {
-    id: '1',
-    employeeId: 'EMP001',
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@company.com',
-    phone: '+1234567890',
-    department: 'PRODUCTION',
-    position: 'Production Manager',
-    hireDate: '2023-01-15',
-    salary: 75000,
-    status: 'ACTIVE',
-    createdAt: '2023-01-15T00:00:00.000Z',
-    updatedAt: '2023-01-15T00:00:00.000Z',
-    user: {
-      email: 'john.doe@company.com',
-      role: 'SUPERVISOR'
-    }
-  },
-  {
-    id: '2',
-    employeeId: 'EMP002',
-    firstName: 'Jane',
-    lastName: 'Smith',
-    email: 'jane.smith@company.com',
-    phone: '+1234567891',
-    department: 'HR',
-    position: 'HR Manager',
-    hireDate: '2023-02-01',
-    salary: 65000,
-    status: 'ACTIVE',
-    createdAt: '2023-02-01T00:00:00.000Z',
-    updatedAt: '2023-02-01T00:00:00.000Z',
-    user: {
-      email: 'jane.smith@company.com',
-      role: 'ADMIN'
-    }
-  },
-  {
-    id: '3',
-    employeeId: 'EMP003',
-    firstName: 'Mike',
-    lastName: 'Wilson',
-    email: 'mike.wilson@company.com',
-    phone: '+1234567892',
-    department: 'QUALITY',
-    position: 'Quality Inspector',
-    hireDate: '2023-03-01',
-    salary: 45000,
-    status: 'ACTIVE',
-    createdAt: '2023-03-01T00:00:00.000Z',
-    updatedAt: '2023-03-01T00:00:00.000Z',
-    user: {
-      email: 'mike.wilson@company.com',
-      role: 'OPERATOR'
-    }
-  }
-]
+import { prisma } from '@/lib/db/prisma-client'
 
 // GET all employees
 export async function GET() {
   try {
+    const employees = await prisma.employee.findMany({
+      include: {
+        user: {
+          select: {
+            email: true,
+            role: true,
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+    
     return NextResponse.json({
       success: true,
-      data: mockEmployees,
+      data: employees,
     })
   } catch (error) {
     console.error('Error fetching employees:', error)
@@ -82,19 +36,43 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    const newEmployee = {
-      id: Date.now().toString(),
-      employeeId: `EMP${String(mockEmployees.length + 1).padStart(3, '0')}`,
-      ...body,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      user: {
-        email: body.email,
-        role: 'OPERATOR'
+    // Check if employee with same email or employeeId already exists
+    const existingEmployee = await prisma.employee.findFirst({
+      where: {
+        OR: [
+          { email: body.email },
+          { employeeId: body.employee_id }
+        ]
       }
+    })
+    
+    if (existingEmployee) {
+      return NextResponse.json(
+        { success: false, error: 'Employee with this email or ID already exists' },
+        { status: 400 }
+      )
     }
     
-    mockEmployees.push(newEmployee)
+    // Create employee
+    const newEmployee = await prisma.employee.create({
+      data: {
+        employeeId: body.employee_id,
+        name: body.name,
+        email: body.email,
+        phone: body.phone || null,
+        department: body.department || 'production',
+        status: body.status || 'active',
+        shift: body.shift || 'Day',
+      },
+      include: {
+        user: {
+          select: {
+            email: true,
+            role: true,
+          }
+        }
+      }
+    })
     
     return NextResponse.json({
       success: true,
