@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
       const newRecord = {
         id: Date.now().toString(),
         employee_id,
-        date: new Date(date),
+        date: new Date(date).toISOString(),
         status,
       }
       
