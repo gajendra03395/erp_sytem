@@ -193,7 +193,7 @@ export default function ProductionPage() {
   const currentMonthWorkOrders = (workOrders || []).filter(wo => {
     try {
       if (!wo) return false
-      const woDate = new Date(wo.created_at || wo.createdAt || new Date())
+      const woDate = new Date(wo.created_at || new Date())
       const woMonth = woDate.toISOString().slice(0, 7)
       return woMonth === selectedMonth
     } catch (error) {
