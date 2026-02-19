@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useWorkOrders, useBOMs } from '@/lib/hooks/useProduction'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -149,6 +149,33 @@ export default function ProductionPage() {
   const { user } = useAuth()
   const { workOrders, loading: woLoading, error: woError, createWorkOrder, updateWorkOrder, deleteWorkOrder } = useWorkOrders()
   const { boms, loading: bomLoading, createBOM } = useBOMs()
+  
+  // Global error handler
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error('Global error caught:', event.error)
+      event.preventDefault()
+      // Show error boundary
+      const errorBoundary = document.getElementById('production-error-boundary')
+      if (errorBoundary) {
+        errorBoundary.style.display = 'flex'
+      }
+    }
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('Unhandled promise rejection:', event.reason)
+      event.preventDefault()
+    }
+
+    window.addEventListener('error', handleError)
+    window.addEventListener('unhandledrejection', handleUnhandledRejection)
+
+    return () => {
+      window.removeEventListener('error', handleError)
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+    }
+  }, [])
+  
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [isCreateWOOpen, setIsCreateWOOpen] = useState(false)
@@ -164,29 +191,55 @@ export default function ProductionPage() {
 
   // Get current month work orders
   const currentMonthWorkOrders = (workOrders || []).filter(wo => {
-    const woDate = new Date(wo.created_at || new Date())
-    const woMonth = woDate.toISOString().slice(0, 7)
-    return woMonth === selectedMonth
+    try {
+      if (!wo) return false
+      const woDate = new Date(wo.created_at || wo.createdAt || new Date())
+      const woMonth = woDate.toISOString().slice(0, 7)
+      return woMonth === selectedMonth
+    } catch (error) {
+      console.error('Error processing work order date:', error)
+      return false
+    }
   })
 
   const filteredWorkOrders = (currentMonthWorkOrders || []).filter(wo => {
-    const matchesSearch = wo.order_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         wo.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         wo.product_sku.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || wo.status === statusFilter
-    return matchesSearch && matchesStatus
+    try {
+      if (!wo) return false
+      const matchesSearch = (wo.order_no || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (wo.product_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (wo.product_sku || '').toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesStatus = statusFilter === 'all' || wo.status === statusFilter
+      return matchesSearch && matchesStatus
+    } catch (error) {
+      console.error('Error filtering work orders:', error)
+      return false
+    }
   })
 
   // Calculate monthly stats
   const monthlyStats = {
     totalOrders: (currentMonthWorkOrders || []).length,
-    completedOrders: (currentMonthWorkOrders || []).filter(wo => wo.status === 'completed').length,
-    inProgressOrders: (currentMonthWorkOrders || []).filter(wo => wo.status === 'in_progress').length,
-    pendingOrders: (currentMonthWorkOrders || []).filter(wo => wo.status === 'pending').length,
-    totalQuantity: (currentMonthWorkOrders || []).reduce((sum, wo) => sum + wo.quantity, 0),
-    completedQuantity: (currentMonthWorkOrders || []).filter(wo => wo.status === 'completed').reduce((sum, wo) => sum + wo.quantity, 0),
+    completedOrders: (currentMonthWorkOrders || []).filter(wo => wo && wo.status === 'completed').length,
+    inProgressOrders: (currentMonthWorkOrders || []).filter(wo => wo && wo.status === 'in_progress').length,
+    pendingOrders: (currentMonthWorkOrders || []).filter(wo => wo && wo.status === 'pending').length,
+    totalQuantity: (currentMonthWorkOrders || []).reduce((sum, wo) => {
+      try {
+        return sum + (wo && typeof wo.quantity === 'number' ? wo.quantity : 0)
+      } catch (error) {
+        console.error('Error calculating total quantity:', error)
+        return sum
+      }
+    }, 0),
+    completedQuantity: (currentMonthWorkOrders || []).reduce((sum, wo) => {
+      try {
+        return sum + (wo && wo.status === 'completed' && typeof wo.quantity === 'number' ? wo.quantity : 0)
+      } catch (error) {
+        console.error('Error calculating completed quantity:', error)
+        return sum
+      }
+    }, 0),
     efficiency: (currentMonthWorkOrders || []).length > 0 
-      ? Math.round(((currentMonthWorkOrders || []).filter(wo => wo.status === 'completed').length / (currentMonthWorkOrders || []).length) * 100)
+      ? Math.round(((currentMonthWorkOrders || []).filter(wo => wo && wo.status === 'completed').length / (currentMonthWorkOrders || []).length) * 100)
       : 0
   }
 
@@ -238,6 +291,13 @@ export default function ProductionPage() {
 
   return (
     <div className="min-h-screen">
+      {/* Error Boundary */}
+      <div id="production-error-boundary" style={{ display: 'none' }}>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-red-600">Application error occurred. Please refresh the page.</div>
+        </div>
+      </div>
+      
       {/* Premium Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
