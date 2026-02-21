@@ -32,6 +32,7 @@
 - **📈 Analytics** - Business intelligence and reporting
 - **📦 Inventory** - Raw materials and finished goods tracking
 - **⚙️ Production** - Manufacturing workflow management
+- **⚡ Workload Analysis** - AI-powered employee performance tracking
 - **💰 Financial Management** - Complete accounting system
 - **💬 Chat System** - Team communication and file sharing
 - **👥 Employee Management** - HR and workforce management
@@ -118,6 +119,7 @@ new_erp/
 │   │   ├── 📈 analytics/        # Business analytics
 │   │   ├── 📦 inventory/        # Inventory management
 │   │   ├── ⚙️ production/       # Manufacturing
+│   │   ├── ⚡ workload/         # AI-powered workload analysis
 │   │   ├── 💰 financial-management/ # Accounting system
 │   │   ├── 💬 chat/            # Team communication
 │   │   ├── 👥 employees/        # HR management
@@ -234,6 +236,17 @@ npx vercel --prod
 - Bill of materials (BOM)
 - Production scheduling
 - Quality control integration
+
+### ⚡ **Workload Analysis** (NEW!)
+- **AI-Powered Predictions** - Machine learning for performance forecasting
+- **Real-time Session Tracking** - Live work activity monitoring
+- **Activity Classification** - Working, Idle, Break, Meeting tracking
+- **Efficiency Scoring** - 0-100% performance metrics
+- **Risk Assessment** - Low, Medium, High risk levels
+- **Interactive Charts** - Visual performance analytics
+- **Employee Analytics** - Individual and team insights
+- **Productivity Metrics** - Tasks per hour and completion rates
+- **Time Management** - Working vs idle time analysis
 
 ### 💰 **Financial Management**
 - General ledger and chart of accounts

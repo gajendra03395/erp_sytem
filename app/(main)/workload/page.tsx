@@ -16,26 +16,45 @@ import { Calendar, Clock, TrendingUp, TrendingDown, Users, Activity, BarChart3, 
 
 export default function WorkloadAnalysisPage() {
   const { user } = useAuth()
-  const { employees } = useEmployees()
+  const { employees, loading: employeesLoading, error: employeesError } = useEmployees()
   const [selectedEmployee, setSelectedEmployee] = useState<string>('')
   const [selectedPeriod, setSelectedPeriod] = useState<string>('daily')
   const [startDate, setStartDate] = useState<string>(new Date().toISOString().split('T')[0])
   const [endDate, setEndDate] = useState<string>(new Date().toISOString().split('T')[0])
   const [isCreateSessionOpen, setIsCreateSessionOpen] = useState(false)
+  const [pageError, setPageError] = useState<string | null>(null)
 
+  // Call hooks unconditionally
   const { sessions, loading: sessionsLoading, createSession } = useWorkloadSessions(selectedEmployee || undefined, startDate, endDate)
   const { analytics, loading: analyticsLoading } = useWorkloadAnalytics(selectedEmployee || undefined, selectedPeriod)
   const { predictions, loading: predictionsLoading, generatePrediction } = useWorkloadPredictions(selectedEmployee || undefined)
 
+  // Error boundary for hooks
+  useEffect(() => {
+    if (sessionsLoading || analyticsLoading || predictionsLoading) {
+      setPageError(null)
+    }
+  }, [sessionsLoading, analyticsLoading, predictionsLoading])
+
   const canManage = user?.role && ['ADMIN', 'SUPERVISOR', 'MANAGER'].includes(user.role)
 
-  // Calculate metrics
-  const averageEfficiency = calculateEfficiencyScore(sessions)
-  const totalWorkingHours = calculateWorkingHours(sessions)
-  const activityBreakdown = getActivityBreakdown(sessions)
+  // Calculate metrics with error handling
+  let averageEfficiency = 0
+  let totalWorkingHours = 0
+  let activityBreakdown = { working: 0, idle: 0, break: 0, meeting: 0 }
 
-  // Get employee name
-  const selectedEmployeeData = employees.find(emp => emp.id === selectedEmployee)
+  try {
+    if (sessions && sessions.length > 0) {
+      averageEfficiency = calculateEfficiencyScore(sessions)
+      totalWorkingHours = calculateWorkingHours(sessions)
+      activityBreakdown = getActivityBreakdown(sessions)
+    }
+  } catch (error) {
+    console.error('Metrics calculation error:', error)
+  }
+
+  // Get employee name with error handling
+  const selectedEmployeeData = employees ? employees.find(emp => emp.id === selectedEmployee) : null
 
   const handleCreateSession = async (formData: FormData) => {
     if (!selectedEmployee) return
@@ -63,13 +82,30 @@ export default function WorkloadAnalysisPage() {
       await generatePrediction(selectedEmployee)
     } catch (error) {
       console.error('Failed to generate prediction:', error)
+      setPageError(error instanceof Error ? error.message : 'Failed to generate prediction')
     }
   }
 
-  if (sessionsLoading || analyticsLoading || predictionsLoading) {
+  // Loading state
+  if (employeesLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (pageError || employeesError) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-red-600 text-center">
+          <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
+          <p>Error: {pageError || employeesError || 'Unknown error occurred'}</p>
+          <Button onClick={() => window.location.reload()} className="mt-4">
+            Reload Page
+          </Button>
+        </div>
       </div>
     )
   }
@@ -288,7 +324,7 @@ export default function WorkloadAnalysisPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {sessions.map(session => (
+                    {(sessions || []).map(session => (
                       <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="flex items-center space-x-4">
                           <Badge variant={session.activityType === 'working' ? 'default' : 'secondary'}>
@@ -309,7 +345,7 @@ export default function WorkloadAnalysisPage() {
                         </div>
                       </div>
                     ))}
-                    {sessions.length === 0 && (
+                    {(!sessions || sessions.length === 0) && (
                       <p className="text-center text-gray-500 py-8">No sessions recorded</p>
                     )}
                   </div>
@@ -319,7 +355,7 @@ export default function WorkloadAnalysisPage() {
 
             <TabsContent value="analytics">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {analytics.map(analytic => (
+                {(analytics || []).map(analytic => (
                   <Card key={analytic.id}>
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
@@ -366,7 +402,7 @@ export default function WorkloadAnalysisPage() {
                     </CardContent>
                   </Card>
                 ))}
-                {analytics.length === 0 && (
+                {(!analytics || analytics.length === 0) && (
                   <Card>
                     <CardContent className="text-center py-8">
                       <p className="text-gray-500">No analytics data available</p>
@@ -396,7 +432,7 @@ export default function WorkloadAnalysisPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {predictions.map(prediction => (
+                    {(predictions || []).map(prediction => (
                       <div key={prediction.id} className="p-4 border rounded-lg">
                         <div className="flex items-center justify-between mb-3">
                           <div>
@@ -433,7 +469,7 @@ export default function WorkloadAnalysisPage() {
                         </div>
                       </div>
                     ))}
-                    {predictions.length === 0 && (
+                    {(!predictions || predictions.length === 0) && (
                       <p className="text-center text-gray-500 py-8">No predictions available</p>
                     )}
                   </div>
@@ -452,37 +488,37 @@ export default function WorkloadAnalysisPage() {
                       <div>
                         <div className="flex justify-between mb-1">
                           <span className="text-sm font-medium">Working</span>
-                          <span className="text-sm">{Math.round((activityBreakdown.working / (activityBreakdown.working + activityBreakdown.idle + activityBreakdown.break + activityBreakdown.meeting)) * 100)}%</span>
+                          <span className="text-sm">{Math.round((activityBreakdown.working / (activityBreakdown.working + activityBreakdown.idle + activityBreakdown.break + activityBreakdown.meeting || 1)) * 100)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="bg-green-600 h-2 rounded-full" style={{ width: `${Math.round((activityBreakdown.working / (activityBreakdown.working + activityBreakdown.idle + activityBreakdown.break + activityBreakdown.meeting)) * 100)}%` }}></div>
+                          <div className="bg-green-600 h-2 rounded-full" style={{ width: `${Math.round((activityBreakdown.working / (activityBreakdown.working + activityBreakdown.idle + activityBreakdown.break + activityBreakdown.meeting || 1)) * 100)}%` }}></div>
                         </div>
                       </div>
                       <div>
                         <div className="flex justify-between mb-1">
                           <span className="text-sm font-medium">Idle</span>
-                          <span className="text-sm">{Math.round((activityBreakdown.idle / (activityBreakdown.working + activityBreakdown.idle + activityBreakdown.break + activityBreakdown.meeting)) * 100)}%</span>
+                          <span className="text-sm">{Math.round((activityBreakdown.idle / (activityBreakdown.working + activityBreakdown.idle + activityBreakdown.break + activityBreakdown.meeting || 1)) * 100)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="bg-red-600 h-2 rounded-full" style={{ width: `${Math.round((activityBreakdown.idle / (activityBreakdown.working + activityBreakdown.idle + activityBreakdown.break + activityBreakdown.meeting)) * 100)}%` }}></div>
+                          <div className="bg-red-600 h-2 rounded-full" style={{ width: `${Math.round((activityBreakdown.idle / (activityBreakdown.working + activityBreakdown.idle + activityBreakdown.break + activityBreakdown.meeting || 1)) * 100)}%` }}></div>
                         </div>
                       </div>
                       <div>
                         <div className="flex justify-between mb-1">
                           <span className="text-sm font-medium">Break</span>
-                          <span className="text-sm">{Math.round((activityBreakdown.break / (activityBreakdown.working + activityBreakdown.idle + activityBreakdown.break + activityBreakdown.meeting)) * 100)}%</span>
+                          <span className="text-sm">{Math.round((activityBreakdown.break / (activityBreakdown.working + activityBreakdown.idle + activityBreakdown.break + activityBreakdown.meeting || 1)) * 100)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="bg-yellow-600 h-2 rounded-full" style={{ width: `${Math.round((activityBreakdown.break / (activityBreakdown.working + activityBreakdown.idle + activityBreakdown.break + activityBreakdown.meeting)) * 100)}%` }}></div>
+                          <div className="bg-yellow-600 h-2 rounded-full" style={{ width: `${Math.round((activityBreakdown.break / (activityBreakdown.working + activityBreakdown.idle + activityBreakdown.break + activityBreakdown.meeting || 1)) * 100)}%` }}></div>
                         </div>
                       </div>
                       <div>
                         <div className="flex justify-between mb-1">
                           <span className="text-sm font-medium">Meeting</span>
-                          <span className="text-sm">{Math.round((activityBreakdown.meeting / (activityBreakdown.working + activityBreakdown.idle + activityBreakdown.break + activityBreakdown.meeting)) * 100)}%</span>
+                          <span className="text-sm">{Math.round((activityBreakdown.meeting / (activityBreakdown.working + activityBreakdown.idle + activityBreakdown.break + activityBreakdown.meeting || 1)) * 100)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${Math.round((activityBreakdown.meeting / (activityBreakdown.working + activityBreakdown.idle + activityBreakdown.break + activityBreakdown.meeting)) * 100)}%` }}></div>
+                          <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${Math.round((activityBreakdown.meeting / (activityBreakdown.working + activityBreakdown.idle + activityBreakdown.break + activityBreakdown.meeting || 1)) * 100)}%` }}></div>
                         </div>
                       </div>
                     </div>
