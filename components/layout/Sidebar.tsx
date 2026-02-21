@@ -34,6 +34,7 @@ const navigation = [
   { name: 'Financial Management', href: '/financial-management', icon: DollarSign },
   { name: 'Inventory', href: '/inventory', icon: Package },
   { name: 'Employees', href: '/employees', icon: Users },
+  { name: 'Workload Analysis', href: '/workload', icon: Zap },
   { name: 'Company Chat', href: '/chat', icon: MessageSquare },
   { name: 'Machines', href: '/machines', icon: Cpu },
   { name: 'Quality Control', href: '/quality-control', icon: ClipboardCheck },

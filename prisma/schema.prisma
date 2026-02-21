@@ -65,6 +65,9 @@ model Employee {
   // Relations
   user      User?
   qcRecords QualityControl[]
+  workloadSessions WorkloadSession[]
+  workloadPredictions WorkloadPrediction[]
+  workloadAnalytics WorkloadAnalytics[]
 
   @@index([employeeId])
   @@index([department])
@@ -630,4 +633,75 @@ model ChatAttachment {
   @@index([messageId])
   @@index([uploadedBy])
   @@map("chat_attachments")
+}
+
+// ============================================
+// WORKLOAD ANALYSIS MODELS
+// ============================================
+
+model WorkloadSession {
+  id           String   @id @default(cuid())
+  employeeId   String   @map("employee_id")
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date         DateTime @default(now())
+  startTime    DateTime @map("start_time")
+  endTime      DateTime? @map("end_time")
+  duration     Int?     @map("duration") // in minutes
+  activityType String   @map("activity_type") // working, idle, break, meeting
+  taskType     String?  @map("task_type") // production, maintenance, admin, etc.
+  efficiency   Float?   @default(0) // 0-100 scale
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([employeeId])
+  @@index([date])
+  @@index([activityType])
+  @@map("workload_sessions")
+}
+
+model WorkloadPrediction {
+  id             String   @id @default(cuid())
+  employeeId     String   @map("employee_id")
+  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  predictionDate DateTime @default(now()) @map("prediction_date")
+  predictedHours Float    @map("predicted_hours")
+  actualHours    Float?   @map("actual_hours")
+  efficiency     Float    @default(0) // 0-100 scale
+  confidence     Float    @default(0) // 0-100 scale
+  riskLevel      String   @default("low") // low, medium, high
+  factors        Json?    // ML factors used for prediction
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([employeeId])
+  @@index([predictionDate])
+  @@index([riskLevel])
+  @@map("workload_predictions")
+}
+
+model WorkloadAnalytics {
+  id             String   @id @default(cuid())
+  employeeId     String   @map("employee_id")
+  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  period         String   // daily, weekly, monthly
+  periodStart    DateTime @map("period_start")
+  periodEnd      DateTime @map("period_end")
+  totalHours     Float    @map("total_hours")
+  workingHours   Float    @map("working_hours")
+  idleHours      Float    @map("idle_hours")
+  breakHours     Float    @map("break_hours")
+  efficiency     Float    @default(0) // 0-100 scale
+  productivity   Float    @default(0) // tasks per hour
+  tasksCompleted Int      @default(0) @map("tasks_completed")
+  overtimeHours  Float    @default(0) @map("overtime_hours")
+  score          Float    @default(0) // overall performance score
+  trends         Json?    // trend analysis data
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([employeeId])
+  @@index([period])
+  @@index([periodStart])
+  @@map("workload_analytics")
 }
