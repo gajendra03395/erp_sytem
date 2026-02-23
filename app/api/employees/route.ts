@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     
     // Validate required fields
-    validateRequest(request, ['employee_id', 'name', 'email'])
+    await validateRequest(request, ['employee_id', 'name', 'email'])
     
     // Basic validation
     if (!body.employee_id || !body.name || !body.email) {

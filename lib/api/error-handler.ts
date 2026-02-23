@@ -24,8 +24,8 @@ export function handleAPIError(error: any, request: NextRequest) {
 }
 
 // Request validation helper
-export function validateRequest(request: NextRequest, requiredFields: string[] = []) {
-  const body = request.body
+export async function validateRequest(request: NextRequest, requiredFields: string[] = []) {
+  const body = await request.json().catch(() => ({}))
   const missing = requiredFields.filter(field => !body[field])
   
   if (missing.length > 0) {
