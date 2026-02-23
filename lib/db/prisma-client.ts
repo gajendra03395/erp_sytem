@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 
-const globalForPrisma = globalThis as unknown as {
+// Fix for browser compatibility - use globalThis instead of global
+const globalForPrisma = (typeof globalThis !== 'undefined' ? globalThis : (global as any)) as unknown as {
   prisma: PrismaClient | undefined
 }
 
@@ -15,6 +16,6 @@ const getPrismaClient = () => {
 
 export const prisma = getPrismaClient()
 
-if (process.env.NODE_ENV !== 'production') {
+if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma
 }

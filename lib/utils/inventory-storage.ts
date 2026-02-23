@@ -1,21 +1,25 @@
-import fs from 'fs'
-import path from 'path'
 import type { InventoryItem, CreateInventoryItem, UpdateInventoryItem } from '@/types/inventory'
 
-const INVENTORY_FILE = path.join(process.cwd(), 'public', 'inventory.json')
+// Browser-compatible storage using localStorage
+const INVENTORY_KEY = 'erp_inventory_data'
 
-// Get all inventory items from file
+// Check if we're in browser environment
+const isBrowser = typeof window !== 'undefined'
+
+// Get all inventory items from storage
 export function getStoredInventory(): InventoryItem[] {
   try {
-    if (fs.existsSync(INVENTORY_FILE)) {
-      const data = fs.readFileSync(INVENTORY_FILE, 'utf-8')
-      const inventory = JSON.parse(data)
-      // Convert date strings back to Date objects
-      return inventory.map((item: any) => ({
-        ...item,
-        created_at: new Date(item.created_at),
-        updated_at: new Date(item.updated_at),
-      }))
+    if (isBrowser) {
+      const data = localStorage.getItem(INVENTORY_KEY)
+      if (data) {
+        const inventory = JSON.parse(data)
+        // Convert date strings back to Date objects
+        return inventory.map((item: any) => ({
+          ...item,
+          created_at: new Date(item.created_at),
+          updated_at: new Date(item.updated_at),
+        }))
+      }
     }
   } catch (err) {
     console.error('Error reading inventory:', err)
@@ -23,16 +27,12 @@ export function getStoredInventory(): InventoryItem[] {
   return []
 }
 
-// Save inventory items to file
+// Save inventory items to storage
 export function saveInventory(items: InventoryItem[]): void {
   try {
-    // Ensure public directory exists
-    const publicDir = path.dirname(INVENTORY_FILE)
-    if (!fs.existsSync(publicDir)) {
-      fs.mkdirSync(publicDir, { recursive: true })
+    if (isBrowser) {
+      localStorage.setItem(INVENTORY_KEY, JSON.stringify(items, null, 2))
     }
-    
-    fs.writeFileSync(INVENTORY_FILE, JSON.stringify(items, null, 2))
   } catch (err) {
     console.error('Error saving inventory:', err)
     throw new Error('Failed to save inventory')

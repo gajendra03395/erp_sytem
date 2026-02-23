@@ -1,7 +1,5 @@
-import fs from 'fs'
-import path from 'path'
-
-const CREDENTIALS_FILE = path.join(process.cwd(), 'public', 'credentials.json')
+// Check if we're in browser environment
+const isBrowser = typeof window !== 'undefined'
 
 export interface CredentialUser {
   id: string
@@ -26,9 +24,11 @@ export function generatePassword(length = 8): string {
 // Get all stored credentials
 export function getStoredCredentials(): CredentialUser[] {
   try {
-    if (fs.existsSync(CREDENTIALS_FILE)) {
-      const data = fs.readFileSync(CREDENTIALS_FILE, 'utf-8')
-      return JSON.parse(data)
+    if (isBrowser) {
+      const data = localStorage.getItem('erp_credentials')
+      if (data) {
+        return JSON.parse(data)
+      }
     }
   } catch (err) {
     console.error('Error reading credentials:', err)
@@ -36,16 +36,12 @@ export function getStoredCredentials(): CredentialUser[] {
   return []
 }
 
-// Save credentials to file
+// Save credentials to storage
 export function saveCredentials(credentials: CredentialUser[]): void {
   try {
-    // Ensure public directory exists
-    const publicDir = path.dirname(CREDENTIALS_FILE)
-    if (!fs.existsSync(publicDir)) {
-      fs.mkdirSync(publicDir, { recursive: true })
+    if (isBrowser) {
+      localStorage.setItem('erp_credentials', JSON.stringify(credentials, null, 2))
     }
-    
-    fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(credentials, null, 2))
   } catch (err) {
     console.error('Error saving credentials:', err)
     throw new Error('Failed to save credentials')
