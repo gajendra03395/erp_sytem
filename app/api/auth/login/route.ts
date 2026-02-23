@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
+import jwt from 'jsonwebtoken'
 import { getStoredCredentials } from '@/lib/utils/credentials'
 import { prisma } from '@/lib/db/prisma-client'
+import { DatabaseHealthCheck } from '@/lib/db/health-check'
 import bcrypt from 'bcryptjs'
 
 // Mock user database with credentials (fallback)
@@ -62,35 +64,40 @@ export async function POST(request: NextRequest) {
 
     let user = null
 
-    // First try to find user in database
-    try {
-      const dbUser = await prisma.user.findFirst({
-        where: {
-          OR: [
-            email ? { email } : {},
-            employee_id ? { employee: { employeeId: employee_id } } : {}
-          ].filter(condition => Object.keys(condition).length > 0)
-        },
-        include: {
-          employee: true
-        }
-      })
+    // First try to find user in database with health check
+    const isDbHealthy = await DatabaseHealthCheck.waitForConnection()
+    if (isDbHealthy) {
+      try {
+        const dbUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              email ? { email } : {},
+              employee_id ? { employee: { employeeId: employee_id } } : {}
+            ].filter(condition => Object.keys(condition).length > 0)
+          },
+          include: {
+            employee: true
+          }
+        })
 
-      if (dbUser) {
-        // Verify password
-        const isValidPassword = await bcrypt.compare(password, dbUser.passwordHash)
-        if (isValidPassword) {
-          user = {
-            id: dbUser.id,
-            name: dbUser.employee?.name || 'Unknown',
-            email: dbUser.email,
-            employee_id: dbUser.employee?.employeeId || 'UNKNOWN',
-            role: dbUser.role,
+        if (dbUser) {
+          // Verify password
+          const isValidPassword = await bcrypt.compare(password, dbUser.passwordHash)
+          if (isValidPassword) {
+            user = {
+              id: dbUser.id,
+              name: dbUser.employee?.name || 'Unknown',
+              email: dbUser.email,
+              employee_id: dbUser.employee?.employeeId || 'UNKNOWN',
+              role: dbUser.role,
+            }
           }
         }
+      } catch (dbError) {
+        console.log('Database user lookup failed, falling back to mock users')
       }
-    } catch (dbError) {
-      console.log('Database user lookup failed, falling back to mock users')
+    } else {
+      console.log('Database not healthy, using fallback authentication')
     }
 
     // If not found in database, check mock users
@@ -115,17 +122,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate simple JWT token (for demo purposes)
-    const token = Buffer.from(
-      JSON.stringify({
+    // Generate proper JWT token
+    const token = jwt.sign(
+      {
         id: user.id,
         email: user.email,
         employee_id: user.employee_id,
         role: user.role,
         name: user.name,
-        iat: Date.now(),
-      })
-    ).toString('base64')
+      },
+      process.env.NEXTAUTH_SECRET || 'fallback-secret-key',
+      { 
+        expiresIn: '24h',
+        issuer: 'erp-system',
+        audience: 'erp-users'
+      }
+    )
 
     return NextResponse.json(
       {

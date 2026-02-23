@@ -112,7 +112,7 @@ export function useWorkloadSessions(employeeId?: string, startDate?: string, end
 
   useEffect(() => {
     fetchSessions()
-  }, [employeeId, startDate, endDate])
+  }, [employeeId, startDate, endDate, fetchSessions])
 
   return { sessions, loading, error, refetch: fetchSessions, createSession }
 }
@@ -163,7 +163,7 @@ export function useWorkloadAnalytics(employeeId?: string, period?: string) {
 
   useEffect(() => {
     fetchAnalytics()
-  }, [employeeId, period])
+  }, [employeeId, period, fetchAnalytics])
 
   return { analytics, loading, error, refetch: fetchAnalytics, createAnalytics }
 }
@@ -208,7 +208,7 @@ export function useWorkloadPredictions(employeeId?: string) {
 
   useEffect(() => {
     fetchPredictions()
-  }, [employeeId])
+  }, [employeeId, fetchPredictions])
 
   return { predictions, loading, error, refetch: fetchPredictions, generatePrediction }
 }

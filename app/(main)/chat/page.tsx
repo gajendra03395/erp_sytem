@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useTheme } from '@/components/providers/ThemeProvider'
 import { Send, Paperclip, Search, Plus, Pin, Lock, Reply, Download, Image as ImageIcon, Video, FileText, Trash2, Edit, MoreVertical } from 'lucide-react'
@@ -82,11 +82,62 @@ export default function ChatPage() {
     fetchThreads()
   }, [])
 
+  const fetchMessages = useCallback(async (threadId: string) => {
+    try {
+      setMessageLoading(true)
+      // Using localStorage for persistence
+      const storedMessages = localStorage.getItem(`chat_messages_${threadId}`)
+      if (storedMessages) {
+        setMessages(JSON.parse(storedMessages))
+      } else {
+        // Default messages
+        const defaultMessages = [
+          {
+            id: '1',
+            content: 'Welcome to the company chat system! This is a great platform for team communication.',
+            threadId: threadId,
+            senderId: 'user1',
+            isEdited: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            sender: {
+              id: 'user1',
+              email: 'admin@company.com',
+              employee: {
+                name: userName || 'Current User',
+                employeeId: 'EMP001'
+              }
+            },
+            attachments: [
+              {
+                id: 'att2',
+                filename: 'profile-pic.png',
+                originalName: 'my-profile.png',
+                mimeType: 'image/png',
+                fileSize: 512000,
+                filePath: '/uploads/chat/profile-pic.png'
+              }
+            ],
+            _count: {
+              replies: 0
+            }
+          }
+        ]
+        setMessages(defaultMessages)
+        localStorage.setItem(`chat_messages_${threadId}`, JSON.stringify(defaultMessages))
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error)
+    } finally {
+      setMessageLoading(false)
+    }
+  }, [userName, userEmail])
+
   useEffect(() => {
     if (selectedThread) {
       fetchMessages(selectedThread.id)
     }
-  }, [selectedThread])
+  }, [selectedThread, fetchMessages])
 
   const fetchThreads = async () => {
     try {
@@ -152,87 +203,6 @@ export default function ChatPage() {
       console.error('Error fetching threads:', error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const fetchMessages = async (threadId: string) => {
-    try {
-      setMessageLoading(true)
-      // Using localStorage for persistence
-      const storedMessages = localStorage.getItem(`chat_messages_${threadId}`)
-      if (storedMessages) {
-        setMessages(JSON.parse(storedMessages))
-      } else {
-        // Default messages
-        const defaultMessages = [
-          {
-            id: '1',
-            content: 'Welcome to the company chat system! This is a great platform for team communication.',
-            threadId: threadId,
-            senderId: 'user1',
-            isEdited: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            sender: {
-              id: 'user1',
-              email: 'admin@company.com',
-              employee: {
-                name: 'Admin User',
-                employeeId: 'ADMIN001'
-              }
-            },
-            attachments: [
-              {
-                id: 'att1',
-                filename: 'sample-image.jpg',
-                originalName: 'company-logo.jpg',
-                mimeType: 'image/jpeg',
-                fileSize: 245760,
-                filePath: '/uploads/chat/sample-image.jpg'
-              }
-            ],
-            _count: {
-              replies: 0
-            }
-          },
-          {
-            id: '2',
-            content: 'Thanks! This looks amazing! 🎉 Check out this photo I uploaded.',
-            threadId: threadId,
-            senderId: 'current-user',
-            isEdited: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            sender: {
-              id: 'current-user',
-              email: userEmail || 'user@company.com',
-              employee: {
-                name: userName || 'Current User',
-                employeeId: 'EMP001'
-              }
-            },
-            attachments: [
-              {
-                id: 'att2',
-                filename: 'profile-pic.png',
-                originalName: 'my-profile.png',
-                mimeType: 'image/png',
-                fileSize: 512000,
-                filePath: '/uploads/chat/profile-pic.png'
-              }
-            ],
-            _count: {
-              replies: 0
-            }
-          }
-        ]
-        setMessages(defaultMessages)
-        localStorage.setItem(`chat_messages_${threadId}`, JSON.stringify(defaultMessages))
-      }
-    } catch (error) {
-      console.error('Error fetching messages:', error)
-    } finally {
-      setMessageLoading(false)
     }
   }
 
