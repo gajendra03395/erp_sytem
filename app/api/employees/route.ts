@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { handleAPIError, validateRequest, handleCORS } from '@/lib/api/error-handler'
 
 // Mock data for production deployment fallback
 const mockEmployees = [
@@ -85,6 +86,26 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
+    // Validate required fields
+    validateRequest(request, ['employee_id', 'name', 'email'])
+    
+    // Basic validation
+    if (!body.employee_id || !body.name || !body.email) {
+      return handleCORS(NextResponse.json(
+        { success: false, error: 'Missing required fields: employee_id, name, email' },
+        { status: 400 }
+      ))
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(body.email)) {
+      return handleCORS(NextResponse.json(
+        { success: false, error: 'Invalid email format' },
+        { status: 400 }
+      ))
+    }
+    
     // Try database first, fallback to mock data
     try {
       const { prisma } = await import('@/lib/db/prisma-client')
@@ -100,10 +121,10 @@ export async function POST(request: NextRequest) {
       })
       
       if (existingEmployee) {
-        return NextResponse.json(
+        return handleCORS(NextResponse.json(
           { success: false, error: 'Employee with this email or ID already exists' },
           { status: 400 }
-        )
+        ))
       }
       
       // Create employee
@@ -127,39 +148,36 @@ export async function POST(request: NextRequest) {
         }
       })
       
-      return NextResponse.json({
+      return handleCORS(NextResponse.json({
         success: true,
         data: newEmployee,
-      })
+      }))
     } catch (dbError) {
       console.log('Database not available, using mock add:', dbError)
       
-      // Mock add
+      // Mock add with validation
       const newEmployee = {
         id: Date.now().toString(),
         employeeId: body.employee_id,
         name: body.name,
         email: body.email,
-        phone: body.phone,
-        department: body.department,
-        status: body.status,
-        shift: body.shift,
+        phone: body.phone || null,
+        department: body.department || 'production',
+        status: body.status || 'active',
+        shift: body.shift || 'Day',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }
       
       mockEmployees.push(newEmployee)
       
-      return NextResponse.json({
+      return handleCORS(NextResponse.json({
         success: true,
         data: newEmployee,
-      })
+      }))
     }
   } catch (error) {
     console.error('Error creating employee:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to create employee' },
-      { status: 500 }
-    )
+    return handleAPIError(error, request)
   }
 }
